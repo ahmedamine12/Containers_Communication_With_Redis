@@ -6,6 +6,9 @@ const url = 'mongodb://mongocontainer:27017/mydatabase';
 
 
 
+
+
+
 async function client() {
   const client = redis.createClient({
     url: "redis://rediscontainer:6379",
@@ -24,24 +27,42 @@ async function client() {
 
   return client;
 }
+async function insertdata(formData) {
+  MongoClient.connect(url)
+    .then((client) => {
+      console.log('Connected successfully to server');
+      const db = client.db('mydatabase');
+      const collection = db.collection('mycollection');
 
+      console.log('Form data:', formData);
+      collection.insertOne(formData, (err, result) => {
+        if (err) {
+          console.log('Error inserting form data:', err);
+        } else {
+          console.log('Form data inserted:', result);
+        }
+      });
+
+
+    })
+    .catch((error) => {
+      console.log('Error connecting to MongoDB:', error);
+    });
+}
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
-console.log("heloooo");
-app.post('/submit', (req, res, body) => {
+
+app.post('/submit', async (req, res, body) => {
   console.log('Form submitted');
   try {
-    const cli = client();
-    const formDataStr = cli.getAsync('formData');
-
+    const cli = await client();
+    const formDataStr = await cli.get('formData');
     console.log('Form data retrieved from Redis:', formDataStr);
     const formData = JSON.parse(formDataStr);
-    const db = MongoClient.connect(url);
-    const collection = db.collection('mycollection');
-    const result = collection.insertOne(formData);
-    console.log('Form data inserted into MongoDB:', result);
+    await insertdata(formData);
+
     db.close();
-    client.delAsync('formData');
+    await cli.del('formData');
     console.log('Form data deleted from Redis');
     res.send('Form submitted successfully!');
   } catch (err) {

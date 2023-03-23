@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const redis = require('redis');
-const { promisify } = require('util');
+const request = require('request');
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
@@ -37,6 +37,10 @@ app.post('/submit', async (req, res, body) => {
     console.error(err);
     res.status(500).send('Error submitting form data to Redis');
   }
+
+  request.post('http://app2container:3002/submit', async (err, resp, body) => {
+
+  })
 });
 
 app.listen(3000, () => {
